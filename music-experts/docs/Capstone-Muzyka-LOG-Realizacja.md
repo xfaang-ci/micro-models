@@ -42,7 +42,7 @@ Druga lekcja: `[ace]` musi zostać z nawiasami, żeby grało jako **akord** (ró
 Wszystkie GPT od zera: **4 warstwy / 4 głowice / dim 128 / okno 128**, char-level, 2000 iter, CPU.
 | Ekspert | Dane | Słownik | Val loss / ppl | Uwagi |
 |---|---|---|---|---|
-| **jig** (`gpt_ckpt.pt`) | 2,45 M znaków | 52 | 1,335 / **3,80** | bazowy; train≈val (brak przeuczenia) |
+| **jig** (`jig_ckpt.pt`) | 2,45 M znaków | 52 | 1,335 / **3,80** | bazowy; train≈val (brak przeuczenia) |
 | **Bach** (`bach_ckpt.pt`) | 79 K (soprany chorałów) | 36 | 0,738 / **2,09** | lekki overfit; dane bardzo powtarzalne → ppl nieporównywalne 1:1 |
 | **walc / fortepian** (`waltz_ckpt.pt`) | 789 K | 53 | 1,484 / **~4,4** | liryczny 3/4; render fortepian |
 | **reel / skrzypce** (`reel_ckpt.pt`) | 3,90 M | 52 | 1,591 / **~4,9** | żwawy fiddle 4/4; render skrzypce |
@@ -63,8 +63,11 @@ Python **3.10** + `torch 2.11.0+cpu` (CUDA padło — dysk; GPU 3050 na późnie
 ## Struktura projektu
 `src/` (gpt, train_gpt, sample_gpt, make_midi, gen_samples, ngram_model, prepare_data, **prepare_bach**, abc_to_midi, analyze, upload_hf, **e0_stitch**, **fuse**, **duet**) · `data/` (`models/*_ckpt.pt`, `corpus/*.abc`, `recordings/{ngram,gpt,bach,waltz,reel,fuzja,fuzja_skrzypce,duet}`) · `samples/` · `reports/`.
 
-## Push (plan)
-git → **Maggio333/slay-piano-gpt** (prywatne, snapshot „początku") + **slayerlabs/micro-models** (kopia jako podfolder, dom zespołu) · HF → **jedno repo-kolekcja** wszystkich ekspertów. *Po skończonej fuzji, jednym kompletem.*
+## Opublikowane (3 miejsca; repo lean = kod + wagi + docs)
+- 🐙 prywatne: **github.com/Maggio333/slay-piano-gpt** — snapshot „początku"
+- 🐙 Slayer: **github.com/slayerlabs/micro-models** → `music-experts/` — dom zespołu (+ `docs/Badania` = research)
+- 🤗 HF kolekcja: **huggingface.co/Maggio33/slay-micro-models** — 5 ekspertów + pipeline
+Modele skonsolidowane w `data/models/` (`jig_ckpt`, bach, waltz, reel, reel-sv). Nagrania/raporty regenerowalne → poza repo.
 
 ## Następne kroki
 - **E0.5** (stitch niezależny seed) → **E1** (stitch reprezentacji walc×reel — głębsze niż ensemble).

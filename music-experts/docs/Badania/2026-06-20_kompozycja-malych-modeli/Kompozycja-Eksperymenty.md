@@ -37,7 +37,26 @@ Prerequisite: **wspólny słownik (53)** — reel przetrenowany na słowniku wal
 - **Duet** (`src/duet.py`): walc (fortepian) + reel (skrzypce) **jednocześnie** — dwie ścieżki, ta sama tonacja; granie razem, nie fuzja w jedną linię.
 > To jest **BASELINE (KMS5, płaskie ważenie)** — działa i jest słyszalny. Stitch reprezentacji (E1, nasza nisza) ma to **pobić**; ensemble jest punktem odniesienia.
 
-## E0.5 — niezależny seed (planowane)
+## E1 — stitch reprezentacji (front walc × g × back reel) — 2026-06-21
+Wspólny słownik (53). Liniowy mapper **g (128×128)** na styku po bloku 2; reszta zamrożona; trening g 800 kroków. `src/e1_stitch.py`.
+
+**Pomiar 1 (SKRZYWIONY — lekcja):** held-out ze sklejonych korpusów → val wyszedł ~czysty reel → „stitch bije ensemble (5,18<5,60)" było **artefaktem** (reel-alone i tak najlepszy 4,92). Złapane, poprawione.
+
+**Pomiar 2 (zbalansowany, val = 50% walc + 50% reel):**
+| model | ppl |
+|---|---|
+| walc-alone | 6,20 |
+| reel-alone | 5,87 |
+| **ensemble** | **5,15** |
+| stitch | 5,18 |
+
+**Wynik (uczciwie):**
+- ✅ **Ensemble bije OBA pojedyncze modele** → łączenie ekspertów realnie pomaga na zadaniu mieszanym.
+- ❌ **Stitch ≈ ensemble** (5,18 vs 5,15) → stitch reprezentacji NIE pobił baseline'u. Złożoność nie zarobiła na siebie *w tym wariancie*.
+
+**Interpretacja:** najtrudniejszy przypadek — **post-hoc, liniowy g, BEZ wymuszonego kontraktu** (KMS2), z pominięciem E0.5. Niezależnie trenowane modele mają różne geometrie → jeden liniowy mapper nie wyrównuje ich lepiej niż uśrednianie. **Hipoteza KMS1 niepotwierdzona TĄ drogą** (negatywny, ale wartościowy wynik). Droga do przewagi: wymuszony kontrakt (KMS2) / bogatszy mapper (KMT3) / najpierw E0.5.
+
+## E0.5 — niezależny seed (teraz uzasadnione wynikiem E1)
 Front modelu A × back **niezależnie wytrenowanej kopii** (inny seed, ten sam kontrakt). Test: czy kontrakt **wymusza wspólną geometrię**. Wymaga **jig-v2** (drugi seed). Δppl mały → kontrakt trzyma; duży → naprawić przed E1.
 
 ## Powiązania

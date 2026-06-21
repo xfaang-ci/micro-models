@@ -1,0 +1,128 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+\title{Kompozycja małych ekspertów muzycznych:\\ baseline'y, bezstratny stitch i uczciwy wynik negatywny}
+\author{Arkadiusz Słota \\ kolektyw \textbf{Slayer} \\ \texttt{github.com/slayerlabs/micro-models}}
+\date{czerwiec 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Trenujemy cztery modele GPT ($\sim$0{,}8 mln parametrów) \emph{od zera} na monofonicznej muzyce w notacji ABC
+(jig irlandzki, sopran chorałów Bacha, walc, reel). Mimo małego rozmiaru uczą się struktury muzycznej --- metrum,
+sygnatur tonacji, kadencji --- z samej predykcji następnego znaku, bez wpisanej w kod teorii muzyki. Następnie
+badamy, czy takich małych ekspertów da się \emph{składać}. Trzy wnioski: (i) mechanizm stitchu jest
+\textbf{bezstratny} --- wytrenowany liniowy mapper na styku pośrednim odtwarza baseline; (ii) płaski
+\textbf{ensemble} dwóch ekspertów bije każdy pojedynczy model na zbalansowanym zadaniu mieszanym; ale
+(iii) \textbf{stitch reprezentacji} (liniowy) tego ensemble \emph{nie bije}. Raportujemy ten wynik negatywny
+otwarcie i wskazujemy warunki --- wymuszony wspólny kontrakt, bogatsze mappery --- w których kompozycja na
+poziomie reprezentacji mogłaby wygrać.
+\end{abstract}
+
+\section{Motywacja}
+Interesują nas \emph{mikro-modele}: sieci dość małe, by zrozumieć je od początku do końca i wytrenować w minuty.
+Pytanie przewodnie: czy wielu małych, poprawnych ekspertów da się \textbf{złożyć} w coś większego --- taniej i
+w sposób modularny --- zamiast trenować jeden duży model. Predykcja następnego tokena to wspólny cel od n-gramu
+po transformer; my pracujemy na jego najmniejszym praktycznym końcu. Zgodnie z zasadami kolektywu Slayer
+(twardy pomiar, jawny koszt, brak benchmaxxingu) raportujemy też wyniki negatywne.
+
+\section{Modele i dane}
+Wszyscy eksperci dzielą jedną architekturę: transformer dekoderowy, \textbf{4 warstwy, 4 głowice,
+$d_\text{model}=128$, okno 128 znaków}, poziom znaku (char-level). Trening: strata cross-entropy, AdamW
+($\text{lr}=3\cdot10^{-4}$), warmup + cosine, $\sim$2000 kroków, CPU (minuty). Dane: melodie folkowe z
+thesession.org (ABC) oraz soprany chorałów Bacha przez \texttt{music21}; surowych danych nie redystrybuujemy
+(odtwarzalne ze skryptów).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrr}
+\toprule
+Ekspert & Styl / render & Dane (znaki) & Val ppl \\
+\midrule
+jig    & jig irlandzki 6/8           & 2{,}45 mln & 3{,}80 \\
+Bach   & sopran chorału (barok)      & 79 tys.    & 2{,}09$^\ast$ \\
+walc   & liryczny 3/4 $\to$ fortepian & 789 tys.  & $\sim$4{,}4 \\
+reel   & żwawy fiddle 4/4 $\to$ skrzypce & 3{,}90 mln & $\sim$4{,}9 \\
+\bottomrule
+\end{tabular}
+\caption{Eksperci. $^\ast$ppl Bacha nieporównywalne 1:1 (mniejszy słownik + bardzo powtarzalne dane).}
+\end{table}
+
+Modele uczą się realnej struktury: generują poprawne ABC, respektują metrum i sygnatury tonacji (np. $^\sharp$F
+w G-dur pojawia się samo, bez błędnych krzyżyków) --- wyłącznie z predykcji następnego znaku.
+
+\section{Eksperymenty kompozycji}
+\paragraph{E0 --- self-stitch (mechanizm).} Wstawiamy liniowy mapper $g\in\mathbb{R}^{128\times128}$ na styku po
+bloku 2 tego samego modelu i zamrażamy resztę. $g=$ identyczność daje \emph{dokładnie} baseline (poprawność
+forwardu); $g$ losowy psuje model (ppl $122$), a trening samych 16 tys.\ parametrów $g$ odbudowuje go do
+baseline (Δppl $+0{,}03$). \textbf{Waliduje to mechanizm, nie tezę kompozycji.}
+
+\paragraph{Ensemble (płaskie ważenie).} Dwóch ekspertów o wspólnym słowniku; w każdym kroku
+$\text{logits}=\alpha\,A + (1-\alpha)\,B$. Baseline do pobicia.
+
+\paragraph{E1 --- stitch reprezentacji.} Front eksperta A $\times\, g \,\times$ back eksperta B (wspólny słownik),
+trening tylko $g$. \emph{Lekcja metodologiczna:} pierwszy pomiar dał ,,stitch bije ensemble'' --- okazało się
+artefaktem (held-out ze sklejonych korpusów wyszedł niemal czysty reel). Po zbalansowaniu (val = 50\% walc +
+50\% reel) wynik się odwrócił. Setup ewaluacji jest częścią dowodu.
+
+\section{Wyniki}
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, width=11cm, height=6cm,
+  symbolic x coords={walc, reel, ensemble, stitch},
+  xtick=data, ylabel={val perplexity (niżej = lepiej)},
+  nodes near coords, nodes near coords precision=2,
+  ymin=0, ymax=7.2, bar width=22pt, enlarge x limits=0.22]
+\addplot coordinates {(walc,6.20) (reel,5.87) (ensemble,5.15) (stitch,5.18)};
+\end{axis}
+\end{tikzpicture}
+\caption{Zbalansowany held-out (walc + reel po równo). \textbf{Ensemble bije oba pojedyncze modele;
+stitch reprezentacji $\approx$ ensemble (minimalnie gorszy).}}
+\end{figure}
+
+\noindent Dwa wnioski: \textbf{(1) ensemble (5{,}15) bije oba pojedyncze modele} (walc 6{,}20, reel 5{,}87) ---
+łączenie ekspertów realnie pomaga na zadaniu mieszanym. \textbf{(2) Stitch (5{,}18) $\approx$ ensemble (5{,}15)}
+--- liniowy stitch reprezentacji nie pobił prostego baseline'u.
+
+\section{Dyskusja}
+Wynik (2) jest negatywny, ale spodziewany: zrobiliśmy najtrudniejszy przypadek --- \emph{post-hoc}, mapper
+\emph{liniowy}, \emph{bez} wymuszonego wspólnego kontraktu, z pominięciem testu wyrównania geometrii. Dwa modele
+trenowane niezależnie mają różne geometrie reprezentacji; pojedynczy liniowy mapper na jednym styku nie wyrównuje
+ich lepiej niż uśrednianie wyjść. Drogi do ewentualnej przewagi: (a) \textbf{wymuszony kontrakt} --- trenować obu
+ekspertów przeciw wspólnej, zamrożonej głowicy od zera \cite{rebasin,zipit}; (b) \textbf{bogatszy mapper} ---
+słownik cech / sparse autoencoder zamiast liniowego \cite{vqvae,sae}; (c) najpierw sprawdzić, czy niezależne
+modele tej samej architektury są w ogóle liniowo zszywalne \cite{stitch15,bansal21}. Prosty baseline (ensemble
+\cite{ensembles}) jest mocny --- złożoność musi dopiero zasłużyć na siebie.
+
+\section{Wnioski}
+Pokazaliśmy, że (i) malutki char-LM uczy się struktury muzycznej z samej predykcji następnego znaku oraz (ii)
+\emph{ensemble} małych ekspertów bije pojedynczy model na zadaniu mieszanym --- kompozycja ma wartość. Nie
+pokazaliśmy (jeszcze), że \emph{stitch na poziomie reprezentacji} bije ten ensemble; ten wynik negatywny wskazuje
+konkretne, sfalsyfikowalne kierunki dalej. Cały kod, wagi i notatki badawcze (dialektyka teza$\leftrightarrow$
+antyteza$\to$synteza) są otwarte w repozytorium.
+
+\begin{thebibliography}{9}
+\bibitem{stitch15} K.~Lenc, A.~Vedaldi. \emph{Understanding image representations by measuring their equivariance and equivalence}. CVPR 2015.
+\bibitem{bansal21} Y.~Bansal, P.~Nakkiran, B.~Barak. \emph{Revisiting Model Stitching to Compare Neural Representations}. NeurIPS 2021.
+\bibitem{zipit} G.~Stoica i in. \emph{ZipIt! Merging Models from Different Tasks without Training}. ICLR 2024.
+\bibitem{rebasin} S.~Ainsworth, J.~Hayase, S.~Srinivasa. \emph{Git Re-Basin}. ICLR 2023.
+\bibitem{ensembles} B.~Lakshminarayanan, A.~Pritzel, C.~Blundell. \emph{Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles}. NeurIPS 2017.
+\bibitem{vqvae} A.~van den Oord, O.~Vinyals, K.~Kavukcuoglu. \emph{Neural Discrete Representation Learning} (VQ-VAE). NeurIPS 2017.
+\bibitem{sae} T.~Bricken i in. \emph{Towards Monosemanticity} (sparse autoencoders), 2023; H.~Cunningham i in., arXiv:2309.08600.
+\bibitem{nplm} Y.~Bengio i in. \emph{A Neural Probabilistic Language Model}. JMLR 2003.
+\bibitem{knnlm} U.~Khandelwal i in. \emph{Generalization through Memorization: Nearest Neighbor Language Models}. ICLR 2020.
+\end{thebibliography}
+
+\end{document}
