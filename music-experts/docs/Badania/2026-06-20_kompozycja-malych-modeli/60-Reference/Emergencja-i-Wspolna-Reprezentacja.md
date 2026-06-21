@@ -60,5 +60,9 @@ Redukujemy **aktywny compute** (MoE = rzadka aktywacja) i koszt treningu/rozszer
 
 **Wartość (z poprawnym setupem):** zbiegają → paper „platońska konwergencja już na 10⁶"; nie zbiegają (przez cały sweep) → „konwergencja wymaga progu skali; poniżej kompozycja niezależnych = ensemble" — tłumaczy E1. Detale: [[Kompozycja-Eksperymenty]].
 
+**WYNIK (pierwszy punkt, ~0,8M, 2026-06-21; `src/tools/cka.py`):** jig–jig-v2 CKA **0,97** (same-task, inny seed), jig–waltz **0,85** (cross-styl), vs **LOSOWY 0,35** (null); mutual-kNN spójnie. → **niezależne maluchy zbiegają do wspólnej geometrii już na mikro-skali** (kierunek „zaskoczenie"). Bach (najdalszy) 0,69 — dystans domen się liczy. ⚠️ jeden punkt; sweep po skali = TODO.
+
+**Niespodzianka rozstrzygająca E1:** wysokie CKA + remis stitch≈ensemble → geometrie SĄ wspólne, więc E1 nie padł przez „różne geometrie" (nasza pierwotna teza — obalona). Właściwy bottleneck to **komplementarność**: wspólna geometria ⇒ informacja redundantna ⇒ mało do złożenia ponad uśrednianie. Wniosek dla programu: „kompozycja > ensemble" wymaga ekspertów o **mało nakładających się** reprezentacjach; wspólna geometria daje za to darmową **interoperacyjność** (relative reps zero-shot — Moschella i in., ICLR 2023).
+
 ## Powiązania
 [[Kompozycja-INDEX]] · [[KMS2-Kontrakt-Vs-Posthoc|KMS2]] (prawo zachowania) · [[KMT3-Slownik-Z-Aktywacji|KMT3]] (interlingua) · [[Wnioski-i-Dowody]] · [[Cele-Globalne-i-Kotwica]]
