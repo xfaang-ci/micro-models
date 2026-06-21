@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+\title{Od n-gramu do transformera: spektrum mechanizmów\\ predykcji następnego znaku (studium na mikro-skali)}
+\author{Arkadiusz Słota \\ kolektyw \textbf{Slayer} \\ \texttt{github.com/slayerlabs/micro-models}}
+\date{czerwiec 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Jeden cel --- predykcja następnego tokena --- realizuje cała rodzina mechanizmów: od twardego zliczania
+(n-gram) po miękką uwagę (transformer). Na char-level korpusie muzyki (jigi w notacji ABC, jeden wspólny
+podział train/val) mierzymy perplexity wzdłuż tego spektrum: n-gram (przemiatanie rzędów 1--6), NPLM
+\cite{nplm} (neural n-gram, przemiatanie okna) oraz mini-GPT z uwagą \cite{transformer}. Wynik \emph{nie} jest
+naiwnym uszeregowaniem: n-gram rzędu 6 (ppl $3{,}90$) niemal dorównuje GPT ($3{,}80$), ale jako tablica
+$\sim$508 tys.\ kontekstów bez zdolności generalizacji; NPLM kompresuje ten sam pomysł do $\sim$40 tys.\
+parametrów (ppl $\sim$$4{,}4$); GPT wygrywa zmiennym, długim kontekstem. Wniosek: spektrum porządkuje nie sam
+perplexity, lecz \textbf{trójkąt ppl--pamięć--generalizacja}.
+\end{abstract}
+
+\section{Motywacja}
+n-gram i transformer bywają stawiane jako „stary'' i „nowy'' model języka, ale łączy je jeden cel:
+$p(x_t \mid x_{<t})$. Różnią się \emph{mechanizmem}: n-gram \textbf{zlicza} wystąpienia w stałym oknie i czyta
+prawdopodobieństwo z tablicy; transformer \textbf{uczy} reprezentacji i waży kontekst uwagą. Między nimi leży
+ciągłe spektrum (m.in.\ NPLM \cite{nplm}, kNN-LM \cite{knnlm}, infini-gram \cite{infinigram}). Pracujemy na jego
+najmniejszym, w pełni audytowalnym końcu --- modele dość małe, by je zrozumieć i wytrenować w minuty na CPU ---
+i pytamy: \emph{co dokładnie kupuje każdy krok po spektrum?}
+
+\section{Układ pomiaru}
+Korpus: melodie folkowe (jigi) w ABC, poziom znaku; $2{,}45$ mln znaków, słownik $52$. Jeden wspólny podział
+$90/10$ (train/val) dla \emph{wszystkich} modeli, więc perplexity ($\mathrm{ppl}=e^{\overline{\text{CE}}}$ na
+held-out) jest bezpośrednio porównywalne. Surowych danych nie redystrybuujemy (odtwarzalne ze skryptów).
+\begin{itemize}
+  \item \textbf{n-gram} (zliczanie): interpolacja liniowa rzędów $0..M$ (wagi $\propto 2^o$, renormalizowane po
+        rzędach aktywnych) z floorem unigramowym add-$k$ --- poprawny rozkład, skończone ppl. Przemiatamy $M=1..6$.
+  \item \textbf{NPLM} \cite{nplm} (neural n-gram): MLP nad konkatenacją embeddingów $N$ ostatnich znaków, bez
+        uwagi, stałe okno. Przemiatamy $N\in\{4,8,16\}$ ($\sim$25--74 tys.\ parametrów).
+  \item \textbf{mini-GPT} \cite{transformer}: dekoderowy transformer (4 warstwy, 4 głowice, $d{=}128$, okno 128;
+        $\sim$0{,}8 mln param) --- uwaga = zmienny, długi kontekst.
+\end{itemize}
+
+\section{Wyniki}
+\begin{table}[h]
+\centering
+\begin{tabular}{llrr}
+\toprule
+Model & Mechanizm & val ppl & Rozmiar \\
+\midrule
+n-gram rząd 1 & zliczanie, okno 1            & 11{,}86 & 52 konteksty \\
+n-gram rząd 3 & zliczanie, okno 3            & 5{,}19  & 13{,}9 tys. \\
+n-gram rząd 5 & zliczanie, okno 5            & 3{,}95  & 215 tys. \\
+n-gram rząd 6 & zliczanie, okno 6            & \textbf{3{,}90}  & \textbf{508 tys. kontekstów} \\
+\midrule
+NPLM, okno 4  & MLP, stałe okno             & 4{,}52  & 25 tys. param \\
+NPLM, okno 8  & MLP, stałe okno             & 4{,}41  & 41 tys. param \\
+NPLM, okno 16 & MLP, stałe okno             & 4{,}38  & 74 tys. param \\
+\midrule
+mini-GPT      & uwaga, okno 128             & \textbf{3{,}80}  & $\sim$800 tys. param \\
+\bottomrule
+\end{tabular}
+\caption{Perplexity na wspólnym held-out (char-level jigi). Pełne przemiatanie n-gramu: $11{,}86 / 7{,}14 /
+5{,}19 / 4{,}29 / 3{,}95 / 3{,}90$ dla rzędów $1$--$6$ (liczba kontekstów: $52 / 1{,}2\text{K} / 13{,}9\text{K} /
+67{,}6\text{K} / 215\text{K} / 508\text{K}$).}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=12cm, height=6.5cm,
+  xlabel={rząd n-gramu (długość okna)}, ylabel={val perplexity (niżej = lepiej)},
+  xtick={1,2,3,4,5,6}, ymin=3, ymax=12.5, legend pos=north east, grid=major, mark size=2.7pt]
+\addplot+[mark=*, thick] coordinates {(1,11.86) (2,7.14) (3,5.19) (4,4.29) (5,3.95) (6,3.90)};
+\addlegendentry{n-gram (interpolacja)}
+\addplot[red, dashed, thick, mark=none] coordinates {(1,3.80) (6,3.80)};
+\addlegendentry{mini-GPT (uwaga, okno 128)}
+\addplot[blue, dotted, thick, mark=none] coordinates {(1,4.38) (6,4.38)};
+\addlegendentry{NPLM (okno 16)}
+\node[anchor=west, font=\footnotesize] at (axis cs:2.6,8.6) {rząd 6: $508$ tys.\ kontekstów (pamięć rośnie $\sim$2--3$\times$/rząd)};
+\end{axis}
+\end{tikzpicture}
+\caption{\textbf{Spektrum mechanizmów predykcji następnego znaku.} n-gram poprawia ppl z rzędem (zapamiętuje
+coraz dłuższe dosłowne konteksty), ale liczba kontekstów eksploduje (do $508$ tys.). Na tym repetytywnym
+korpusie n-gram rzędu 6 ($3{,}90$) niemal dorównuje GPT ($3{,}80$), a NPLM (stałe okno, $\sim$40 tys.\ param)
+osiąga $\sim$$4{,}4$. Perplexity nie różnicuje mocno mechanizmów --- różnica leży w \emph{pamięci} i
+\emph{generalizacji} (patrz dyskusja).}
+\label{fig:spectrum}
+\end{figure}
+
+\section{Dyskusja}
+\paragraph{n-gram: pamięć rośnie szybciej niż jakość.} Perplexity spada monotonicznie z rzędem
+($11{,}86\!\to\!3{,}90$), lecz liczba przechowywanych kontekstów rośnie $\sim$2--3-krotnie na rząd (do $508$
+tys.). To \emph{tablica look-up}: dla kontekstów niewidzianych w treningu n-gram nie generalizuje, tylko cofa
+się (backoff) do krótszego okna. Że rząd 6 niemal dorównuje GPT, wynika z \textbf{repetytywności muzyki} ---
+wiele 6-gramów z val występuje dosłownie w train. To zasługa \emph{pamiętania}, nie rozumienia; perplexity na
+repetytywnych danych nagradza pamiętanie.
+
+\paragraph{NPLM: kompresja i generalizacja zamiast tablicy.} Ten sam pomysł (stałe okno), ale predyktor jest
+\emph{neuronowy}: gładka funkcja nad embeddingami, $\sim$40 tys.\ parametrów zamiast setek tysięcy kontekstów.
+Płaci nieco wyższym ppl ($\sim$$4{,}4$), ale uczy się \emph{reprezentacji} (podobne konteksty $\to$ podobne
+predykcje), więc generalizuje na konteksty niewidziane. To jest „most'': mechanika n-gramu, lecz waga w
+nauczonych cechach, nie w zliczeniach.
+
+\paragraph{Transformer: zmienny, długi kontekst.} Uwaga \cite{transformer} znosi sztywne okno --- model sam waży,
+które wcześniejsze znaki są istotne --- i osiąga najlepszy ppl ($3{,}80$) kosztem $\sim$0{,}8 mln parametrów.
+Dalsze punkty spektrum (poza tym studium): kNN-LM \cite{knnlm} interpoluje sieć z wyszukiwaniem najbliższych
+sąsiadów, a infini-gram \cite{infinigram} realizuje n-gram o nieograniczonym $n$ przez suffix array (zliczanie
+bez limitu długości kontekstu).
+
+\paragraph{Teza.} Spektrum porządkuje \textbf{trójkąt ppl--pamięć--generalizacja}, nie sam perplexity. Twarde
+zliczanie kupuje niski ppl pamięcią i bez generalizacji; sieć neuronowa kupuje generalizację i zwartość kosztem
+odrobiny ppl; uwaga kupuje zmienny kontekst kosztem parametrów. Na repetytywnym, char-level korpusie różnica
+w ppl między końcami spektrum jest \emph{mała} --- to przestroga: perplexity sam nie rozstrzyga o „lepszym''
+mechanizmie.
+
+\section{Ograniczenia}
+Jedna domena (jigi), poziom znaku, mikro-skala; prosta interpolacja n-gramu (wagi $2^o$); perplexity nie mierzy
+generalizacji wprost (kluczowe przy n-gramie). Wszystkie liczby pochodzą z jednego ziarna treningu. Kod
+ewaluacji (\texttt{ngram\_eval.py}, \texttt{nplm.py}) i wagi GPT są otwarte w repozytorium.
+
+\begin{thebibliography}{9}
+\bibitem{nplm} Y.~Bengio, R.~Ducharme, P.~Vincent, C.~Jauvin. \emph{A Neural Probabilistic Language Model}. JMLR 2003.
+\bibitem{transformer} A.~Vaswani i in. \emph{Attention Is All You Need}. NeurIPS 2017.
+\bibitem{knnlm} U.~Khandelwal, O.~Levy, D.~Jurafsky, L.~Zettlemoyer, M.~Lewis. \emph{Generalization through Memorization: Nearest Neighbor Language Models}. ICLR 2020. arXiv:1911.00172.
+\bibitem{infinigram} J.~Liu i in. \emph{Infini-gram: Scaling Unbounded $n$-gram Language Models to a Trillion Tokens}. COLM 2024. arXiv:2401.17377.
+\end{thebibliography}
+
+\end{document}
