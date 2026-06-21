@@ -16,27 +16,27 @@ repo_hf: "https://huggingface.co/Maggio33/slay-piano-gpt"
 
 ## Pipeline (działa end-to-end)
 `dane (ABC) → model (następny token) → generacja → MIDI (fortepian)`
-Jedno polecenie użycia: `python src/make_midi.py --key G --n 3 --out data/recordings/gpt/x`
+Jedno polecenie użycia: `python src/generate/make_midi.py --key G --n 3 --out data/recordings/gpt/x`
 
 ## Dane
 - Źródło: **thesession.org** (`tunes.csv`, 17 MB, ~54 tys. melodii).
-- Filtr + czyszczenie (`src/prepare_data.py`): **jigi 6/8**, usunięte symbole akordów `"..."`, zachowane `~` ozdobniki, `[ace]` akordy, triole.
+- Filtr + czyszczenie (`src/data/prepare_data.py`): **jigi 6/8**, usunięte symbole akordów `"..."`, zachowane `~` ozdobniki, `[ace]` akordy, triole.
 - Korpus: **12 106 jigów, 2,45 mln znaków, słownik 52** (`data/jigs.abc`, NIE w repo — licencja).
 
 ## Model 1 — n-gram (baseline)
-- `src/ngram_model.py` — czysty Python, **order-6 z backoffem**, zliczanie (bez wag).
+- `src/train/ngram_model.py` — czysty Python, **order-6 z backoffem**, zliczanie (bez wag).
 - Metryka nowości (kopiuje vs komponuje): okno 8 znaków → **16% sekwencji nowych** (skleja zapamiętane fragmenty).
 - Raport: `reports/raport-baseline.html`.
 
 ## Model 2 — GPT od zera (mini-transformer)
-- `src/gpt.py` — architektura **L07**: embedding + uwaga Q/K/V z maską + MLP/GELU + residual + LayerNorm, weight tying.
+- `src/core/gpt.py` — architektura **L07**: embedding + uwaga Q/K/V z maską + MLP/GELU + residual + LayerNorm, weight tying.
 - **816 384 param** (4 warstwy, 4 głowice, dim 128, okno 128, char-level vocab 52).
-- Trening (`src/train_gpt.py`, **L03/L08**): cross-entropy, AdamW, warmup+cosine, grad-clip, 2000 iter, CPU (~12 min).
+- Trening (`src/train/train_gpt.py`, **L03/L08**): cross-entropy, AdamW, warmup+cosine, grad-clip, 2000 iter, CPU (~12 min).
 - **Wynik: val loss 1,335 → perplexity 3,80** (train≈val, brak przeuczenia).
 
 ## Kluczowe odkrycie (uczciwy pomiar)
 **Czyszczenie danych obniżyło perplexity 3,88 → 3,80** i usunęło „akordowy bełkot" w generacji.
-Druga lekcja: `[ace]` musi zostać z nawiasami, żeby grało jako **akord** (równoczesne nuty) — udowodnione (2 akordy w → 2 w MIDI). Naprawione w `src/abc_to_midi.py` (`sanitize` nie kasuje już `[]`).
+Druga lekcja: `[ace]` musi zostać z nawiasami, żeby grało jako **akord** (równoczesne nuty) — udowodnione (2 akordy w → 2 w MIDI). Naprawione w `src/core/abc_to_midi.py` (`sanitize` nie kasuje już `[]`).
 
 ## Rodzina ekspertów (wszystkie modele, stan 2026-06-21)
 Wszystkie GPT od zera: **4 warstwy / 4 głowice / dim 128 / okno 128**, char-level, 2000 iter, CPU.
@@ -50,8 +50,8 @@ Wszystkie GPT od zera: **4 warstwy / 4 głowice / dim 128 / okno 128**, char-lev
 
 ## Złączenie / kompozycja (sandbox dla papera)
 - **E0 self-stitch ✅** — mapper na styku bezstratny (Δppl +0,033). Szczegóły: [[Kompozycja-Eksperymenty]].
-- **Fuzja (ensemble, `src/fuse.py`)** — mieszanie rozkładów walc×reel (wspólny słownik): `logits = α·walc + (1-α)·reel`. α=0,5 (render fortepian, **odsłuch: ładna**) i α=0,3 (więcej reela, render skrzypce). To baseline „płaskiego ważenia" (KMS5).
-- **Duet (`src/duet.py`)** — fortepian (walc) + skrzypce (reel) grają **jednocześnie** (dwie ścieżki, ta sama tonacja). NIE fuzja w jedną linię — dwie niezależne linie złożone naraz.
+- **Fuzja (ensemble, `src/compose/fuse.py`)** — mieszanie rozkładów walc×reel (wspólny słownik): `logits = α·walc + (1-α)·reel`. α=0,5 (render fortepian, **odsłuch: ładna**) i α=0,3 (więcej reela, render skrzypce). To baseline „płaskiego ważenia" (KMS5).
+- **Duet (`src/compose/duet.py`)** — fortepian (walc) + skrzypce (reel) grają **jednocześnie** (dwie ścieżki, ta sama tonacja). NIE fuzja w jedną linię — dwie niezależne linie złożone naraz.
 
 ## Opublikowane (pierwszy raz!)
 - 🐙 GitHub: https://github.com/Maggio333/slay-piano-gpt

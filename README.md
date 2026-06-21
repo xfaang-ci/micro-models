@@ -48,7 +48,7 @@ micro-models/
 cd music-experts
 pip install -r requirements.txt
 # wygeneruj melodię od eksperta i wyrenderuj do MIDI
-python src/gen_samples.py --ckpt data/models/waltz_ckpt.pt --meter 3/4 --keys D,G,Emin --inst piano --out out
+python src/generate/gen_samples.py --ckpt data/models/waltz_ckpt.pt --meter 3/4 --keys D,G,Emin --inst piano --out out
 ```
 
 ## O nas

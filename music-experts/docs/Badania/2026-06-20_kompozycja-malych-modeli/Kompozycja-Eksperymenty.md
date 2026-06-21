@@ -10,7 +10,7 @@ author: Arkadiusz Słota
 
 # Kompozycja małych modeli — log eksperymentów
 
-> Wyniki E0/E0.5/E1/E2. Kryteria rozstrzygnięcia w syntezach. Kod: `src/e0_stitch.py` (`C:/ProjektyPublic/MuzykaML`).
+> Wyniki E0/E0.5/E1/E2. Kryteria rozstrzygnięcia w syntezach. Kod: `src/compose/e0_stitch.py` (`C:/ProjektyPublic/MuzykaML`).
 
 ## E0 — self-stitch (benchmark zerowy) — ✅ PASS — 2026-06-21
 **Setup:** model jig (`data/gpt_ckpt.pt`, 4 bloki, n_embd 128). Liniowy mapper **g (128×128)** na **styku po bloku 2**, reszta **zamrożona**. Dane: `jigs.abc` (char-level). Trening **tylko g** (16K param), 500 kroków, AdamW lr 1e-3. Eval na stałych batchach val (ten sam seed).
@@ -31,14 +31,14 @@ author: Arkadiusz Słota
 - **Werdykt waliduje MECHANIZM (hydraulikę), NIE tezę kompozycji** (zgodnie z [[KMS1-Kompozycja-Gdy-Kontrakt|KMS1]]). Zielone = „harness działa", nie „kompozycja działa".
 
 ## Złączenie walc × reel — ensemble (baseline płaskiego ważenia, KMS5) — 2026-06-21
-Prerequisite: **wspólny słownik (53)** — reel przetrenowany na słowniku walca (`reel_sv_ckpt.pt`, val 1,582/ppl ~4,9; retrening nie zaszkodził). `src/fuse.py`: w każdym kroku `logits = α·walc + (1-α)·reel` → sampling (assert wspólnego stoi przechodzi).
+Prerequisite: **wspólny słownik (53)** — reel przetrenowany na słowniku walca (`reel_sv_ckpt.pt`, val 1,582/ppl ~4,9; retrening nie zaszkodził). `src/compose/fuse.py`: w każdym kroku `logits = α·walc + (1-α)·reel` → sampling (assert wspólnego stoi przechodzi).
 - **α=0,5** (render fortepian) — odsłuch: **oceniona jako ładna** (blend stylów zadziałał).
 - **α=0,3** (więcej reela, render skrzypce).
-- **Duet** (`src/duet.py`): walc (fortepian) + reel (skrzypce) **jednocześnie** — dwie ścieżki, ta sama tonacja; granie razem, nie fuzja w jedną linię.
+- **Duet** (`src/compose/duet.py`): walc (fortepian) + reel (skrzypce) **jednocześnie** — dwie ścieżki, ta sama tonacja; granie razem, nie fuzja w jedną linię.
 > To jest **BASELINE (KMS5, płaskie ważenie)** — działa i jest słyszalny. Stitch reprezentacji (E1, nasza nisza) ma to **pobić**; ensemble jest punktem odniesienia.
 
 ## E1 — stitch reprezentacji (front walc × g × back reel) — 2026-06-21
-Wspólny słownik (53). Liniowy mapper **g (128×128)** na styku po bloku 2; reszta zamrożona; trening g 800 kroków. `src/e1_stitch.py`.
+Wspólny słownik (53). Liniowy mapper **g (128×128)** na styku po bloku 2; reszta zamrożona; trening g 800 kroków. `src/compose/e1_stitch.py`.
 
 **Pomiar 1 (SKRZYWIONY — lekcja):** held-out ze sklejonych korpusów → val wyszedł ~czysty reel → „stitch bije ensemble (5,18<5,60)" było **artefaktem** (reel-alone i tak najlepszy 4,92). Złapane, poprawione.
 
