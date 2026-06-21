@@ -96,6 +96,21 @@ Nasz stitch jest **kierunkowy** (front=walc × g × głowa=reel), ensemble **sym
 
 **Konsekwencja (obala interpretację E1):** geometrie NIE są różne (0,85–0,97), więc remis stitch≈ensemble **nie** wynika z „różnych geometrii". Nowe wyjaśnienie: **wspólna geometria ⇒ redundancja ⇒ mało komplementarnej informacji** do złożenia (stąd ensemble ledwo bije single). Wspólna geometria pomaga **interoperacyjności** (relative reps zadziałają zero-shot), ale nie tworzy *czego* złożyć. Bottleneck programu „kompozycja > ensemble" to **komplementarność**, nie wyrównanie → następne eksperymenty potrzebują ekspertów o **różnych, mało nakładających się** reprezentacjach. → [[Emergencja-i-Wspolna-Reprezentacja]].
 
+### Sweep skali (2026-06-21) — czy konwergencja ROŚNIE z N? (same-task, inny seed; n_layer=4, n_embd 64/128/192)
+| rozmiar | val ppl | CKA | mutual-kNN |
+|---|---|---|---|
+| ~0,2M | 5,0 | 0,956 | 0,778 |
+| ~0,8M | 3,80 | 0,973 | 0,822 |
+| ~1,8M | 3,13 | 0,970 | 0,843 |
+
+**Odczyt (uczciwie):**
+- **Konwergencja jest WYSOKA już na 0,2M** (CKA ~0,96) — pojawia się **wcześnie/tanio**, nie dopiero przy skali.
+- **CKA saturuje** (~0,96–0,97, blisko sufitu) → w tym zakresie **nie pokazuje trendu** (efekt sufitu).
+- **mutual-kNN rośnie monotonicznie** 0,778 → 0,822 → 0,843 — **zgodnie z kierunkiem PRH** (czulsza metryka łapie trend, którego CKA nie widzi). **Metryka ma znaczenie.**
+- ⚠️ **1 para seedów na skalę** → różnice w granicach szumu; to **sugestia, nie dowód**. Twardy wynik wymaga **wielu par seedów (error bars)** + szerszego zakresu skal.
+
+**Wniosek:** na mikro-skali konwergencja jest **obecna i wczesna**; PRH-owski „rośnie z N" widać tylko **czulszą metryką** (kNN), bo CKA już przy suficie. Wzmacnia tezę interoperacyjności ([[10-Tezy/KMT6-Konwergencja-Umozliwia-Kompozycje|KMT6]]): skoro maluchy zbiegają już od 0,2M, relative reps mają mocne podłoże.
+
 ## E0.5 — niezależny seed (uzasadnione wynikiem E1; po E_CKA)
 Front modelu A × back **niezależnie wytrenowanej kopii** (inny seed, ten sam kontrakt). Test: czy kontrakt **wymusza wspólną geometrię**. Wymaga **jig-v2** (drugi seed). Δppl mały → kontrakt trzyma; duży → naprawić przed E1. (E_CKA mierzy to **pasywnie** — bez stitchu; E0.5 to ten sam test aktywnie, przez złączenie.)
 

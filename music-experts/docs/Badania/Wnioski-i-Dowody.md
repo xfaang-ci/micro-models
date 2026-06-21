@@ -19,7 +19,7 @@ author: Arkadiusz Słota
 | `[ace]` musi zostać z nawiasami, by grało jako akord | test: 2 akordy w ABC → 2 akordy w MIDI | ✅ |
 | Mechanizm stitchu jest bezstratny (E0) | g=identyczność == baseline co do cyfry; g losowy (ppl **122**) → trening 16K param → ppl **3,83** (Δ+0,03) | ✅ |
 | **Ensemble ekspertów bije pojedyncze modele** (zadanie mieszane) | zbalansowany held-out: ensemble **5,15** < reel 5,87 < walc 6,20 | ✅ zmierzone |
-| **Niezależne maluchy mają WSPÓLNĄ geometrię** (mikro-skala 0,8M) | CKA jig–jig-v2 **0,97**, jig–waltz **0,85** vs null **0,35**; mutual-kNN spójnie (`src/tools/cka.py`) | ✅ zmierzone (1 punkt skali) |
+| **Niezależne maluchy mają WSPÓLNĄ geometrię** (mikro-skala) | CKA ~0,96 **już od 0,2M** (sweep 0,2/0,8/1,8M; sufit), kNN rośnie **0,78→0,82→0,84** (kierunek PRH), vs null **0,35** (`src/tools/cka.py`) | ✅ zmierzone (3 pkt skali, 1 para seedów/pkt) |
 
 ## ❌ NIE udowodnione (jeszcze)
 | Hipoteza | Co wyszło | Status |
@@ -41,7 +41,7 @@ author: Arkadiusz Słota
 ZipIt! (ICLR'24) · Git Re-Basin (ICLR'23) · model stitching (Lenc-Vedaldi CVPR'15; Bansal NeurIPS'21) · SN-Net (CVPR'23) · VQ-VAE (NeurIPS'17) · SAE / Towards Monosemanticity (Bricken, Cunningham '23) · Rosetta Neurons (ICCV'23) · AoANet (ICCV'19) · deep ensembles (NeurIPS'17) · MEMIT (ICLR'23) + Hase i in. (NeurIPS'23) · NPLM (JMLR'03) · kNN-LM (ICLR'20, ppl 15,79) · Infini-gram (COLM'24).
 
 ## ➡️ Następne dowody do zdobycia (kolejność wg wartość/wysiłek)
-1. **E_CKA (NOWY, ~godzina, decydujący)** — CKA/mutual-kNN między 4 modelami: czy niezależne maluchy mają wspólną geometrię (platońska konwergencja na mikro-skali). **Sweep po skali + baseline** (inaczej nieinterpretowalne). Rozstrzyga w obie strony, tłumaczy E1. → [[Emergencja-i-Wspolna-Reprezentacja]].
+1. ✅ **E_CKA + sweep — ZROBIONE** (wspólna geometria już od 0,2M; kNN rośnie z N — kierunek PRH; tłumaczy E1). **Do utwardzenia:** wiele par seedów (error bars) + szerszy zakres skal + **cross-domena** (czy NIŻSZE CKA = większy zysk z kompozycji — test komplementarności [[Emergencja-i-Wspolna-Reprezentacja]] / KMS6).
 2. **Pre-check wariancja vs CE** (tani) — czy wariancja koreluje z błędem per token; bramka przed routingiem.
 3. **Kontrakt shared-trunk (KMS2)** — wspólny zamrożony front+głowa, trenuj tylko tyły, na domenach w **tym samym metrum** (walc vs mazur — ⚠️ pułapka metrum). Rozstrzyga tezę kompozycji.
 4. **Bogatszy mapper (KMT3)** — słownik/SAE / relative representations — dopiero jeśli (3) pokaże iskrę.

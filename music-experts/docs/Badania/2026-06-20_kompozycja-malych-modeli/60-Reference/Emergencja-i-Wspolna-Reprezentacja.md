@@ -60,7 +60,9 @@ Redukujemy **aktywny compute** (MoE = rzadka aktywacja) i koszt treningu/rozszer
 
 **Wartość (z poprawnym setupem):** zbiegają → paper „platońska konwergencja już na 10⁶"; nie zbiegają (przez cały sweep) → „konwergencja wymaga progu skali; poniżej kompozycja niezależnych = ensemble" — tłumaczy E1. Detale: [[Kompozycja-Eksperymenty]].
 
-**WYNIK (pierwszy punkt, ~0,8M, 2026-06-21; `src/tools/cka.py`):** jig–jig-v2 CKA **0,97** (same-task, inny seed), jig–waltz **0,85** (cross-styl), vs **LOSOWY 0,35** (null); mutual-kNN spójnie. → **niezależne maluchy zbiegają do wspólnej geometrii już na mikro-skali** (kierunek „zaskoczenie"). Bach (najdalszy) 0,69 — dystans domen się liczy. ⚠️ jeden punkt; sweep po skali = TODO.
+**WYNIK (pierwszy punkt, ~0,8M, 2026-06-21; `src/tools/cka.py`):** jig–jig-v2 CKA **0,97** (same-task, inny seed), jig–waltz **0,85** (cross-styl), vs **LOSOWY 0,35** (null); mutual-kNN spójnie. → **niezależne maluchy zbiegają do wspólnej geometrii już na mikro-skali** (kierunek „zaskoczenie"). Bach (najdalszy) 0,69 — dystans domen się liczy.
+
+**Sweep skali (0,2 / 0,8 / 1,8M, same-task inny seed):** CKA **0,956 → 0,973 → 0,970** (już przy suficie od 0,2M — efekt sufitu, brak widocznego trendu), ale **mutual-kNN rośnie monotonicznie 0,778 → 0,822 → 0,843** — kierunek PRH widoczny **tylko czulszą metryką**. Metryka ma znaczenie. ⚠️ 1 para seedów/skalę = sugestia; twardy wynik wymaga error bars + szerszego zakresu skal. Konwergencja jest **wczesna** (obecna już na 0,2M).
 
 **Niespodzianka rozstrzygająca E1:** wysokie CKA + remis stitch≈ensemble → geometrie SĄ wspólne, więc E1 nie padł przez „różne geometrie" (nasza pierwotna teza — obalona). Właściwy bottleneck to **komplementarność**: wspólna geometria ⇒ informacja redundantna ⇒ mało do złożenia ponad uśrednianie. Wniosek dla programu: „kompozycja > ensemble" wymaga ekspertów o **mało nakładających się** reprezentacjach; wspólna geometria daje za to darmową **interoperacyjność** (relative reps zero-shot — Moschella i in., ICLR 2023).
 
