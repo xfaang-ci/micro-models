@@ -19,7 +19,7 @@ author: Arkadiusz Słota
 | `[ace]` musi zostać z nawiasami, by grało jako akord | test: 2 akordy w ABC → 2 akordy w MIDI | ✅ |
 | Mechanizm stitchu jest bezstratny (E0) | g=identyczność == baseline co do cyfry; g losowy (ppl **122**) → trening 16K param → ppl **3,83** (Δ+0,03) | ✅ |
 | **Ensemble ekspertów bije pojedyncze modele** (zadanie mieszane) | zbalansowany held-out: ensemble **5,15** < reel 5,87 < walc 6,20 | ✅ zmierzone |
-| **Niezależne maluchy mają WSPÓLNĄ geometrię, rosnącą z N** (mikro-skala) | CKA ~0,95 **już od 0,05M** (sufit), mutual-kNN rośnie **0,71→0,79→0,83→0,84 PONAD szum** (kierunek PRH), vs null **0,35** (`src/tools/cka.py`) | ✅ zmierzone (4 skale ×3 seedy = mean±std) |
+| **Niezależne maluchy dzielą geometrię** (stabilność wzgl. seeda; mikro-skala) | **CKA** trenowane **0,94 ≫ właściwy null (losowy-losowy) 0,44**; per-warstwa równomiernie (L0–L3); cross-styl 0,84. ⚠️ *mutual-kNN wycofany — skażony* (`src/tools/cka.py`) | ✅ zmierzone (po audycie) |
 
 ## ❌ NIE udowodnione (jeszcze)
 | Hipoteza | Co wyszło | Status |
@@ -35,13 +35,14 @@ author: Arkadiusz Słota
 - **Pułapka metrum:** style w różnym metrum (jig 6/8, walc 3/4, reel 4/4) są rozłączne po nagłówku `M:` → router pokaże ~100% trafności ściągając z JEDNEGO tokena, nie z reprezentacji. Test routingu MUSI mieć domeny w **tym samym metrum** (walc vs mazur). *Dotyczy routingu, nie E1.*
 - **Symetria E1:** stitch kierunkowy (głowa reela) vs ensemble symetryczny — porównanie lekko jabłka/gruszki; uczciwszy test = symetryczna fuzja reprezentacji do wspólnej głowy.
 - **Prawo zachowania kotwicy:** wspólna geometria **nie emerguje za darmo** z niezależnych modeli — ktoś musi raz zapłacić za szeroką kotwicę. ([[Emergencja-i-Wspolna-Reprezentacja]])
-- **🔄 E_CKA obalił naszą interpretację E1:** twierdziliśmy „różne geometrie"; CKA pokazał geometrie **wspólne** (0,85–0,97 vs null 0,35). Remis stitch≈ensemble to **redundancja** (mała komplementarność ekspertów), nie niezgodność geometrii. *Dane obaliły nasze wyjaśnienie — dobrze; bottleneck kompozycji to komplementarność, nie wyrównanie.*
+- **🔄 E_CKA obalił naszą interpretację E1:** twierdziliśmy „różne geometrie"; CKA pokazał geometrie **wspólne** (cross-styl 0,84 ≫ null 0,44). Remis stitch≈ensemble to **redundancja**, nie niezgodność geometrii. *Bottleneck kompozycji to komplementarność, nie wyrównanie.*
+- **🕵️ Audyt obalił nasz headline (i to dobrze):** „mutual-kNN rośnie = kierunek PRH" było artefaktem **probe ×3** + złego nulla. Właściwy null (losowy-vs-losowy = **0,68 ≈ trenowane 0,66**) pokazał, że **kNN skażony** (mierzy strukturę wejścia); **CKA jest czystym sygnałem** (0,94 ≫ 0,44). Reguły: *porównuj metrykę z JEJ własnym nullem; framing musi == pomiar (stabilność≠konwergencja).* → [[Audyt-Analizy-Pomiaru]]
 
 ## 📚 Referencje zweryfikowane u źródeł (deep-research: 13/13 charakterystyk trafnych)
 ZipIt! (ICLR'24) · Git Re-Basin (ICLR'23) · model stitching (Lenc-Vedaldi CVPR'15; Bansal NeurIPS'21) · SN-Net (CVPR'23) · VQ-VAE (NeurIPS'17) · SAE / Towards Monosemanticity (Bricken, Cunningham '23) · Rosetta Neurons (ICCV'23) · AoANet (ICCV'19) · deep ensembles (NeurIPS'17) · MEMIT (ICLR'23) + Hase i in. (NeurIPS'23) · NPLM (JMLR'03) · kNN-LM (ICLR'20, ppl 15,79) · Infini-gram (COLM'24).
 
 ## ➡️ Następne dowody do zdobycia (kolejność wg wartość/wysiłek)
-1. ✅ **E_CKA + sweep — ZROBIONE** (wspólna geometria już od 0,2M; kNN rośnie z N — kierunek PRH; tłumaczy E1). **Do utwardzenia:** wiele par seedów (error bars) + szerszy zakres skal + **cross-domena** (czy NIŻSZE CKA = większy zysk z kompozycji — test komplementarności [[Emergencja-i-Wspolna-Reprezentacja]] / KMS6).
+1. ✅ **E_CKA — ZROBIONE I ZAUDYTOWANE** (CKA: wspólna geometria 0,94 ≫ null 0,44; mutual-kNN wycofany jako skażony — [[Audyt-Analizy-Pomiaru]]). **Pozostało:** ≥5 niezależnych seedów + test nachylenia, fixed-step snapshot (nie best-val), **cross-domena** (czy NIŻSZE CKA = większy zysk z kompozycji — komplementarność, KMS6).
 2. **Pre-check wariancja vs CE** (tani) — czy wariancja koreluje z błędem per token; bramka przed routingiem.
 3. **Kontrakt shared-trunk (KMS2)** — wspólny zamrożony front+głowa, trenuj tylko tyły, na domenach w **tym samym metrum** (walc vs mazur — ⚠️ pułapka metrum). Rozstrzyga tezę kompozycji.
 4. **Bogatszy mapper (KMT3)** — słownik/SAE / relative representations — dopiero jeśli (3) pokaże iskrę.

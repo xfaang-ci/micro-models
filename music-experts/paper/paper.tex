@@ -108,7 +108,7 @@ modele tej samej architektury są w ogóle liniowo zszywalne \cite{stitch15,bans
 
 \paragraph{Asymetria porównania.} Nasz stitch jest \emph{kierunkowy} (front A $\times\,g\,\times$ głowa B), a ensemble \emph{symetryczny} (miesza obie głowy). Uczciwszy test pytania „czy kompozycja reprezentacji bije mieszanie wyjścia'' to \emph{symetryczna} fuzja reprezentacji do wspólnej głowy --- nie unieważnia remisu, ale go niuansuje.
 
-\paragraph{Pomiar konwergencji reprezentacji (CKA na mikro-skali).} Sprawdziliśmy wprost, czy niezależnie trenowane mikro-modele dzielą geometrię --- metrykami CKA \cite{cka} i mutual-kNN \cite{platonic}, jako \emph{funkcję skali} (Rys.~\ref{fig:cka}). \textbf{Tak: konwergencja jest wysoka już na $0{,}05$M} (CKA $\approx0{,}95$, daleko powyżej poziomu null $0{,}35$ dla modelu-vs-losowy). To \emph{obala} naszą pierwotną interpretację „różnych geometrii'' --- geometrie są wspólne, więc remis stitch$\approx$ensemble wynika z \textbf{redundancji} (mało komplementarnej informacji), nie z niezgodności; wspólna geometria otwiera za to darmową interoperacyjność przez reprezentacje względne \cite{relreps}. \emph{Niuans:} CKA saturuje ($\approx0{,}95$--$0{,}97$), więc trend ze skalą widać dopiero w czulszej metryce mutual-kNN ($0{,}71\to0{,}84$, monotonicznie i ponad szum seedów) --- zgodnie z kierunkiem hipotezy platońskiej \cite{platonic}; \emph{wybór metryki ma znaczenie}. \emph{Uwaga do dalszego routingu:} domeny rozłączne po metrum (6/8 vs 4/4) pozwalają routerowi „oszukać'' po jednym tokenie nagłówka --- testy routingu wymagają domen w \emph{tym samym} metrum.
+\paragraph{Pomiar zgodności reprezentacji (CKA na mikro-skali).} Sprawdziliśmy wprost, czy niezależnie trenowane mikro-modele dzielą geometrię --- metryką CKA \cite{cka}, względem \emph{właściwego} nulla (dwa \emph{losowe} modele tej samej architektury), jako funkcję skali (Rys.~\ref{fig:cka}). \textbf{Tak: zgodność jest wysoka i wczesna} --- CKA modeli same-task (różny seed) $\approx0{,}94$ już od $0{,}05$M, \emph{znacznie} powyżej nulla losowy--losowy ($0{,}44$), równomiernie we wszystkich blokach (nie tylko w warstwie wejściowej); także między stylami (jig--walc $0{,}84$). To wspiera interpretację E1: geometrie są wspólne, więc remis stitch$\approx$ensemble wynika z \textbf{redundancji} (mało komplementarnej informacji), nie z niezgodności; wspólna geometria otwiera za to interoperacyjność przez reprezentacje względne \cite{relreps}. \emph{Uczciwie (po adwersarialnym audycie analizy):} (i) to \emph{stabilność reprezentacji względem inicjalizacji} przy tych samych danych, a nie „platońska konwergencja'' w sensie \cite{platonic} (ta wymaga różnych danych/modalności); (ii) metryka mutual-kNN okazała się \textbf{nieprzydatna na tej skali} --- jej null losowy--losowy ($\approx0{,}68$) jest równie wysoki jak modele trenowane, więc mierzy strukturę wejścia, nie wyuczoną zgodność; raportujemy zatem wyłącznie CKA. \emph{Uwaga do dalszego routingu:} domeny rozłączne po metrum (6/8 vs 4/4) pozwalają routerowi „oszukać'' po jednym tokenie nagłówka --- testy routingu wymagają domen w \emph{tym samym} metrum.
 
 \begin{figure}[h]
 \centering
@@ -119,16 +119,18 @@ modele tej samej architektury są w ogóle liniowo zszywalne \cite{stitch15,bans
   xtick={0.05,0.2,0.8,1.8}, xticklabels={0{,}05M,0{,}2M,0{,}8M,1{,}8M},
   ymin=0.3, ymax=1.02, legend pos=south east, grid=major, mark size=2.5pt]
 \addplot+[mark=*, error bars/.cd, y dir=both, y explicit] coordinates {
-  (0.05,0.952)+-(0,0.007) (0.2,0.964)+-(0,0.006) (0.8,0.973)+-(0,0.000) (1.8,0.971)+-(0,0.000)};
-\addlegendentry{CKA}
+  (0.05,0.915)+-(0,0.010) (0.2,0.936)+-(0,0.004) (0.8,0.947)+-(0,0.003) (1.8,0.945)+-(0,0.002)};
+\addlegendentry{CKA (trenowane)}
 \addplot+[mark=square*, error bars/.cd, y dir=both, y explicit] coordinates {
-  (0.05,0.713)+-(0,0.018) (0.2,0.793)+-(0,0.011) (0.8,0.829)+-(0,0.005) (1.8,0.842)+-(0,0.002)};
-\addlegendentry{mutual-kNN ($k{=}10$)}
-\addplot[black, dashed, mark=none] coordinates {(0.05,0.35) (1.8,0.35)};
-\addlegendentry{null (vs losowy)}
+  (0.05,0.462)+-(0,0.016) (0.2,0.589)+-(0,0.005) (0.8,0.669)+-(0,0.015) (1.8,0.730)+-(0,0.004)};
+\addlegendentry{mutual-kNN (trenowane)}
+\addplot[black, dashed, mark=none] coordinates {(0.05,0.441) (1.8,0.441)};
+\addlegendentry{null CKA (losowy--losowy)}
+\addplot[black, dotted, mark=none] coordinates {(0.05,0.684) (1.8,0.684)};
+\addlegendentry{null kNN (losowy--losowy)}
 \end{axis}
 \end{tikzpicture}
-\caption{\textbf{Konwergencja reprezentacji niezależnie trenowanych mikro-modeli w funkcji rozmiaru.} Podobieństwo \emph{same-task} (te same dane --- jigi ABC; różny seed) między wyjściami bloków, uśrednione po warstwach, mierzone CKA \cite{cka} i mutual-kNN ($k{=}10$; metryka z \cite{platonic}); słupki błędu $=\pm$std po 3 parach seedów na każdą skalę. Linia przerywana: poziom null (model wytrenowany vs losowy, CKA$\approx0{,}35$). \emph{Wniosek:} konwergencja jest wysoka już na $0{,}05$M; mutual-kNN rośnie monotonicznie i ponad szum seedów wraz ze skalą ($0{,}71\to0{,}84$, malejące przyrosty), zgodnie z kierunkiem hipotezy platońskiej, podczas gdy CKA saturuje ($\approx0{,}95$--$0{,}97$) i jest zbyt zgrubny, by ten trend rozdzielić --- wybór metryki ma znaczenie na mikro-skali.}
+\caption{\textbf{Zgodność reprezentacji niezależnie trenowanych mikro-modeli (same-task, różny seed) w funkcji rozmiaru.} CKA \cite{cka} i mutual-kNN ($k{=}10$) między wyjściami bloków, uśrednione po warstwach; słupki błędu $=\pm$std (próbkowe) po 3 parach seedów. Linie odniesienia: null \emph{losowy--losowy} osobno dla każdej metryki (dwa nietrenowane modele tej samej architektury). \emph{Wniosek (po adwersarialnym audycie analizy):} CKA modeli trenowanych ($\approx0{,}94$) leży \textbf{daleko powyżej} swojego nulla ($0{,}44$) --- realna wspólna geometria, wysoka już na $0{,}05$M. Natomiast mutual-kNN ($0{,}46$--$0{,}73$) jest na poziomie \emph{swojego} nulla ($\approx0{,}68$) --- metryka zdominowana strukturą wejścia, \emph{nie} świadczy o wyuczonej zgodności; dlatego wnioskujemy wyłącznie z CKA. Właściwy null i wybór metryki mają znaczenie.}
 \label{fig:cka}
 \end{figure}
 

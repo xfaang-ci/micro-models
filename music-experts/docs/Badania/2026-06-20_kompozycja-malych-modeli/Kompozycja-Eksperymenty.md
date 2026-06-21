@@ -67,7 +67,29 @@ Jig (6/8), walc (3/4), reel (4/4) są **rozłączne po nagłówku `M:`**. Router
 ## Caveat symetrii E1 (dopisany 2026-06-21)
 Nasz stitch jest **kierunkowy** (front=walc × g × głowa=reel), ensemble **symetryczny** (miesza obie głowy). Porównaliśmy więc graft-w-jedną-stronę z fuzją-w-obie — lekko jabłka/gruszki. Stitch kierunkowy może być co najwyżej tak dobry jak „back-reela przetwarzający cechy frontu-walca". Uczciwszy test „czy kompozycja reprezentacji bije mieszanie wyjścia" to **symetryczna** fuzja reprezentacji do wspólnej głowy. Nie unieważnia remisu (5,18≈5,15), ale go niuansuje — do dopisania w paperze.
 
-## E_CKA — czy niezależne maluchy mają WSPÓLNĄ geometrię? — ✅ WYNIK 2026-06-21
+## E_CKA — czy niezależne maluchy mają WSPÓLNĄ geometrię? — ✅ WYNIK (🕵️ SKORYGOWANY po audycie)
+
+> **🕵️ KOREKTA PO ADWERSARIALNYM AUDYCIE (2026-06-21).** Audyt złapał dwa błędy, które **odwróciły wniosek**:
+> 1. **Probe był jednym blokiem ×3** (`PROBE=(...)*3`) → sztuczne duplikaty zawyżały mutual-kNN. Naprawione: probe = realny fragment korpusu, **N=11 712**, bez duplikatów.
+> 2. **Zły null** (trenowany-vs-losowy). Dodano właściwy: **losowy-vs-losowy**.
+>
+> **Skorygowane liczby:**
+> | metryka | jig–jig-v2 | jig–waltz | null losowy–losowy | trenowany–losowy |
+> |---|---|---|---|---|
+> | **CKA** | **0,945** | 0,841 | **0,441** | 0,290 |
+> | mutual-kNN | 0,656 | 0,500 | **0,684** ⚠️ | 0,147 |
+>
+> - ✅ **CKA wiarygodny:** trenowane **0,94 ≫ null 0,44**; per-warstwa równomiernie (L0–L3: 0,93–0,95) → nie artefakt embeddingu/pozycji. Cross-styl 0,84 ≫ 0,44 → realna wspólna geometria.
+> - ❌ **mutual-kNN SKAŻONY:** losowy-vs-losowy **0,68 ≈ trenowane 0,66** → kNN mierzy strukturę wejścia (zachowaną przez DOWOLNĄ sieć), nie wyuczoną zgodność. **Wycofany jako miara konwergencji**; wcześniejsze „kNN rośnie = PRH" było po części artefaktem probe ×3.
+> - **Krzywa skali (CKA, skorygowana):** 0,915 → 0,936 → 0,947 → 0,945 — wysoka, wczesna, lekki wzrost → plateau (~0,94). Trend ze skalą **mały**.
+> - **Reframe (I1):** jig–jig-v2 = **stabilność względem seeda** (te same dane), NIE „platońska konwergencja" (PRH wymaga RÓŻNYCH danych). Cross-styl = słaby surogat.
+> - **E1 trzyma się** (na CKA): geometrie wspólne (0,84–0,94 ≫ 0,44) → remis stitch≈ensemble to redundancja, nie niezgodność.
+>
+> Pozostałe znaleziska (n=3 zależne pary, jedna domena, best-val na różnych krokach) + pełna dialektyka audytu → [[Audyt-Analizy-Pomiaru]]. **Liczby poniżej są PIERWOTNE (z błędnym probe) — zostawione jako ślad.**
+
+---
+
+### (ślad) Pierwotny wynik 2026-06-21 — przed audytem
 **Pytanie:** czy nasze niezależnie trenowane modele (jig, jig-v2, walc, reel) zbiegają do wspólnej reprezentacji, czy mają rozłączne geometrie? (Robocza nazwa hipotezy: „platońska konwergencja" — cytat w [[Emergencja-i-Wspolna-Reprezentacja]], weryfikacja u źródeł w toku.) Dla dużych modeli badane; **na mikro-skali (~0,8M) — nietknięte**.
 **Metoda:** policz wzajemne podobieństwo reprezentacji warstw (CKA / mutual-kNN) między modelami na wspólnym zbiorze próbek. **~godzina roboty, zero treningu.**
 **Czemu decydujący:**
