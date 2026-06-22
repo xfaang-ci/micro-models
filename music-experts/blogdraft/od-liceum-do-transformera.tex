@@ -1,0 +1,155 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{Od licealnej matematyki do transformera:\\
+każdy mechanizm, który już znasz --- i jedno miejsce, gdzie liceum się kończy}
+\author{Arkadiusz Słota \\ kolektyw \textbf{Slayer} \\ \texttt{github.com/slayerlabs/micro-models}}
+\date{czerwiec 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Pokutuje przekonanie, że modele językowe to wiedza tajemna. To nieprawda. \emph{Każdy} klocek, z którego
+zbudowany jest transformer, ma odpowiednik w matematyce z polskiego liceum --- funkcja wykładnicza, pochodna,
+wektory, średnia ważona, prawdopodobieństwo warunkowe, logarytm. Pokazujemy to mapowanie wprost i uczciwie:
+gdzie analogia jest \emph{dokładna}, a gdzie jest pomocnym uproszczeniem. Jest dokładnie jedno miejsce, w którym
+licealna matematyka się kończy --- i to właśnie ono jest najciekawsze. Całość ilustrujemy na uruchamialnym
+mikro-modelu (char-level, trening w minuty na CPU); czytelnik może odpalić go sam. Na koniec łączymy zabawkę
+z tym, co kolektyw Slayer robi w skali produkcyjnej --- \emph{koncepcyjnie}, bez mieszania nieporównywalnych liczb.
+
+\textbf{Status: DRAFT do recenzji wewnętrznej.} Wszystkie liczby z naszych biegów; kod i wagi otwarte.
+\end{abstract}
+
+\section{Po co to}
+Cel jest prosty: złamać tabu, że ML jest \emph{trudny}. Nie jest --- jest \emph{nieznajomy}. Pokażemy, że
+mechanizmy, które brzmią groźnie, to pojęcia, które większość czytelników już zna ze szkoły, tylko pod innymi
+nazwami. Adresat: osoba, która tydzień temu nie wiedziała, co to \emph{gradient descent}, a chciałaby zacząć.
+Zgodnie z metodą Slayera (twardy pomiar, brak pół-prawd) nie obiecujemy, że ,,liceum wystarcza na wszystko''
+--- pokazujemy, dokąd dowozi i \emph{gdzie} się kończy.
+
+\section{Jeden cel}
+Każdy model językowy robi jedno: przewiduje następny token, $p(\text{następny}\mid\text{poprzednie})$.
+Cała reszta to mechanizmy realizujące ten sam cel. Zejdźmy na najmniejszy, w pełni audytowalny koniec:
+\textbf{poziom znaku}, korpus melodii w notacji ABC, modele trenowane w minuty na CPU.
+
+\section{Sześć mechanizmów = sześć pojęć z liceum}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Mechanizm ML} & \textbf{Z liceum to\ldots} & \textbf{Status analogii} \\
+\midrule
+Softmax $\;e^{x_i}/\sum_j e^{x_j}$ & f. wykładnicza + rozkład (suma $=1$) & dokładna \\
+Atencja & średnia ważona + iloczyn skalarny & dokładna \\
+n-gram & prawd. warunkowe + zliczanie częstości & dokładna \\
+Cross-entropy / perplexity & logarytm + ,,jak bardzo zaskoczony'' & dokładna \\
+Embedding & wektory / współrzędne w przestrzeni & + wielowymiarowość, uczone \\
+Gradient descent & pochodna $\to$ minimum funkcji & + iteracyjność, wiele wymiarów \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Softmax (dokładna).} Bierzesz liczby (logity), podnosisz $e$ do każdej i normalizujesz, by sumowały
+się do 1: $\sigma(x)_i = e^{x_i}/\sum_j e^{x_j}$. To funkcja wykładnicza z liceum plus aksjomat, że
+prawdopodobieństwa sumują się do jedności. Nic więcej.
+
+\paragraph{Atencja (dokładna --- i najczystszy dowód tezy).} Model patrzy wstecz i robi \textbf{średnią ważoną}
+wcześniejszych tokenów. Wagi biorą się z \textbf{iloczynu skalarnego} (podobieństwo zapytania i klucza),
+przepuszczonego przez softmax: $\text{wynik}=\sum_t \alpha_t v_t$, $\alpha=\mathrm{softmax}(q\!\cdot\!k/\sqrt{d})$.
+Jedyny dodatek poza liceum to dzielnik $\sqrt{d}$ (stabilizacja). Atencja \emph{naprawdę} jest licealna.
+
+\paragraph{n-gram (dokładna).} Zliczasz, jak często po danym oknie znaków padał dany znak, i czytasz
+$p(\text{znak}\mid\text{kontekst})$ z tablicy. Prawdopodobieństwo warunkowe + częstości --- prosto z liceum.
+
+\paragraph{Cross-entropy / perplexity (dokładna).} ,,Zaskoczenie'' modelu prawdziwym znakiem to
+$-\log p$ (surprisal Shannona): im mniejsze prawdopodobieństwo, tym większe zdziwienie. Cross-entropy to średnie
+zaskoczenie; perplexity $=e^{\text{CE}}$ to ,,na ilu opcjach model się waha''. Logarytm + prawdopodobieństwo.
+
+\paragraph{Embedding (intuicja dokładna, plus jedno rozszerzenie).} Każdy token dostaje \textbf{wektor}
+--- współrzędne w przestrzeni. Z liceum znasz wektory w 2D/3D; tu wymiarów są setki, a współrzędne się
+\emph{uczą} tak, by bliskość w przestrzeni oznaczała podobieństwo znaczenia. Intuicja współrzędnych jest
+dokładna; nowe jest tylko: dużo wymiarów i uczona geometria.
+
+\paragraph{Gradient descent (idea dokładna, plus jedno rozszerzenie).} W liceum szukasz minimum: liczysz
+pochodną i przyrównujesz do zera. Tu jest to samo --- pochodna mówi, w którą stronę ,,w dół'' --- tyle że
+robisz to \textbf{małymi krokami}, \textbf{w wielu wymiarach naraz} (gradient = wektor pochodnych cząstkowych),
+bo wzoru na minimum nie ma. Zasada licealna; nowe jest iteracyjne schodzenie w wysokim wymiarze.
+
+\section{Gdzie liceum się kończy: backpropagation}
+Wszystkie \emph{klocki} są z liceum. Spina je jedna rzecz, która już z liceum nie jest: \textbf{backpropagation}
+--- reguła łańcuchowa przeciągnięta automatycznie przez wiele warstw, żeby policzyć gradient po wszystkich wagach
+naraz. Regułę łańcuchową dla jednego złożenia znasz z poziomu rozszerzonego; backprop to ta sama reguła zastosowana
+mechanicznie przez głęboki graf obliczeń. \emph{To jedyne miejsce, w którym trzeba wyjść poza liceum --- i jest
+to najciekawszy moment, drzwi do następnego poziomu, a nie powód do strachu.}
+
+\section{Dowód na żywo: jeden cel, trzy mechanizmy}
+Na char-level korpusie muzyki mierzymy perplexity (niżej = lepiej) trzech mechanizmów na tym samym podziale:
+
+\begin{center}
+\begin{tabular}{@{}llr@{}}
+\toprule
+Model & mechanizm & val ppl \\
+\midrule
+n-gram rząd 1 & zliczanie, okno 1 & 11{,}86 \\
+n-gram rząd 3 & zliczanie, okno 3 & 5{,}19 \\
+n-gram rząd 6 & zliczanie, okno 6 & \textbf{3{,}90} \\
+NPLM, okno 8 & MLP, stałe okno & 4{,}41 \\
+NPLM, okno 16 & MLP, stałe okno & 4{,}38 \\
+mini-GPT & uwaga, okno 128 & \textbf{3{,}80} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Niespodzianka:} n-gram rzędu 6 (3{,}90) \emph{niemal dorównuje} transformerowi (3{,}80). To
+\textbf{nie} znaczy ,,transformery są zbędne'' --- znaczy, że perplexity to jeden wymiar. Dorzuć
+\textbf{pamięć} (n-gram: 508 tys.\ kontekstów, rośnie lawinowo) i \textbf{generalizację} (n-gram nie
+ekstrapoluje --- nieznany kontekst cofa do krótszego; sieć neuronowa uogólnia po podobieństwie w przestrzeni
+embeddingów), a n-gram i transformer okazują się \textbf{przeciwnymi rogami} tego samego trójkąta
+jakość\,--\,pamięć\,--\,obliczenia. Pełny rozkład: \texttt{blogdraft/most-ngram-transformer.md}.
+
+\paragraph{Uczciwie, bez pół-prawd.} n-gram wygląda aż tak dobrze, bo muzyka jest \emph{repetytywna} --- wiele
+6-gramów z walidacji występuje dosłownie w treningu. Czystego testu ekstrapolacji (walidacja ze \emph{świeżych}
+melodii) jeszcze nie zrobiliśmy; przewidujemy, że tam n-gram siądzie, a sieci utrzymają. Nie udajemy, że to już
+pokazaliśmy --- to nasz następny eksperyment.
+
+\section{Most do praktyki: ta sama idea w skali Slayera}
+\textbf{Ostrzeżenie metodologiczne:} nie zestawiamy tych liczb z liczbami produkcyjnymi --- char-level perplexity
+na muzyce a accuracy na polskich zadaniach to \emph{różne osie}. Most jest \emph{koncepcyjny}, nie numeryczny.
+Przenosi się natomiast:
+\begin{itemize}
+  \item \textbf{ten sam cel} --- predykcja następnego tokena, od muzycznego char-LM po polski model 9B;
+  \item \textbf{ta sama dyscyplina pomiaru} --- held-out, dekontaminacja, brak benchmaxxingu --- skaluje się 1:1;
+        zmienia się tylko metryka (perplexity $\to$ accuracy);
+  \item \textbf{to samo spektrum mechanizmów} --- n-gram\,$\to$\,transformer (zabawka) odpowiada wyborom
+        produkcyjnym: mały\,$\to$\,duży, gęsty vs MoE, baza vs instrukt.
+\end{itemize}
+W praktyce to ,,mierzenie predykcji następnego znaku'' staje się polskim leaderboardem ewaluacyjnym
+(LLMzSzŁ, PES, PoQuAD, FLORES, Belebele) z dekontaminacją korpusów --- ta sama uczciwość, większa skala.
+
+\paragraph{Dokąd zmierzamy.} Napięcie pamięć\,vs\,generalizacja z zabawki to to samo napięcie w naszej
+roadmapie: tani, składalny, suwerenny polski model i ewaluacja, której nie da się oszukać (weryfikowalna nagroda).
+
+\section{Spróbuj sam}
+Cały przykład jest uruchamialny na CPU w minuty. Odpalasz mikro-model, widzisz predykcję następnego znaku
+na własne oczy --- i nagle ,,transformer'' przestaje być magią.
+\begin{verbatim}
+git clone https://github.com/slayerlabs/micro-models
+# music-experts/ : trening eksperta + generacja + porownanie n-gram/NPLM/GPT
+\end{verbatim}
+\textbf{Następny szczebel:} weź zadanie ,,good first issue'', odpal benchmark lokalnie i zgłoś wynik --- i już
+jesteś w środku, z publicznym, podpisanym wkładem. To samo, co zrobiłem ucząc się tego od zera.
+
+\section{Jak pracujemy (Slayer)}
+\emph{Żadnej tezy bez dowodu.} Publikujemy też \textbf{wyniki negatywne}, a własne pomiary przepuszczamy przez
+\textbf{adwersarialny audyt} --- przy pokrewnym eksperymencie złapaliśmy tak własny błąd metryki i wycofaliśmy ją,
+zanim cokolwiek ogłosiliśmy. Wykres ma opowiadać historię badawczą, nie tylko pokazywać dane.
+
+\end{document}
