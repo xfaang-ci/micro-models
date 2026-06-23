@@ -1,0 +1,44 @@
+name: Release PDFs
+
+# Wypchnij tag `vX.Y` → CI kompiluje papery i podpina PDF-y do Release (stałe linki).
+#   git tag v0.1 && git push origin v0.1
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # GITHUB_TOKEN (automatyczny) — potrzebny do utworzenia Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kompilacja paper.tex
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: music-experts/paper
+          root_file: paper.tex
+
+      - name: Kompilacja most-ngram-transformer.tex
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: music-experts/paper
+          root_file: most-ngram-transformer.tex
+
+      - name: Kompilacja draft.tex
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: music-experts/blogdraft/warsztat-spektrum
+          root_file: draft.tex
+
+      - name: Publikacja PDF-ów w Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            music-experts/paper/paper.pdf
+            music-experts/paper/most-ngram-transformer.pdf
+            music-experts/blogdraft/warsztat-spektrum/draft.pdf
